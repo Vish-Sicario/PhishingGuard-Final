@@ -12,7 +12,6 @@ import urllib.request
 BASE_URL = "https://phishingguard-final-production-production.up.railway.app"
 SCAN_ENDPOINT = BASE_URL + "/api/scan"
 
-# Public benign websites used only as functional false-positive checks.
 BENIGN_CASES = [
     "https://www.google.com/",
     "https://github.com/",
@@ -23,8 +22,6 @@ BENIGN_CASES = [
     "https://www.cloudflare.com/",
 ]
 
-# These reserved/non-public inputs test the API safety boundary. They must be
-# rejected rather than fetched. They are not phishing-accuracy test samples.
 BLOCKED_CASES = [
     "http://127.0.0.1/",
     "http://localhost/",
@@ -71,16 +68,24 @@ def main():
     for url in BENIGN_CASES:
         try:
             status, data = request_scan(url)
-            score = pick(data, "overall_score", "risk_score", "score")
+            score = pick(data, "overall_risk_score", "overall_score", "risk_score", "score")
             level = pick(data, "risk_level", "level", "classification")
             final_url = pick(data, "final_url", "final_destination")
-            passed = status == 200 and (level is None or str(level).upper() not in {"HIGH", "CRITICAL"})
+            cnn = pick(data, "cnn_phishing_score")
+            lexical = pick(data, "lexical_risk_score")
+            live = pick(data, "live_website_risk_score")
+            tls_valid = pick(data, "tls_valid")
+            passed = status == 200 and level is not None and str(level).upper() not in {"HIGH", "CRITICAL"}
             failures += 0 if passed else 1
             print(json.dumps({
                 "url": url,
                 "http": status,
-                "score": score,
+                "overall_score": score,
                 "level": level,
+                "cnn_score": cnn,
+                "lexical_score": lexical,
+                "live_score": live,
+                "tls_valid": tls_valid,
                 "final_url": final_url,
                 "pass": passed,
             }, ensure_ascii=False))
