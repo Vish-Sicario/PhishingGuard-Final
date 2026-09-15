@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+          content="PhishingGuard - AI-powered phishing and website threat intelligence.">
+
+    <title>PhishingGuard | Website Threat Intelligence</title>
+
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+
+<div class="ambient ambient-one"></div>
+<div class="ambient ambient-two"></div>
+
+<header class="navbar">
+    <a class="brand" href="#">
+        <div class="brand-shield">PG</div>
+        <div>
+            <strong>Phishing<span>Guard</span></strong>
+            <small>THREAT INTELLIGENCE</small>
+        </div>
+    </a>
+
+    <nav>
+        <a href="#scanner">Scanner</a>
+        <a href="#technology">Technology</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#security">Security</a>
+    </nav>
+
+    <div class="system-status">
+        <i></i>
+        Analysis Engine Online
+    </div>
+</header>
+
+
+<main>
+
+<!-- HERO -->
+
+<section class="hero" id="scanner">
+
+    <div class="eyebrow">
+        <span></span>
+        AI-POWERED WEBSITE THREAT ANALYSIS
+    </div>
+
+    <h1>
+        Investigate a website<br>
+        <em>before you trust it.</em>
+    </h1>
+
+    <p class="hero-copy">
+        PhishingGuard combines deep-learning URL analysis,
+        lexical threat intelligence and live website inspection
+        to identify phishing indicators and explain website risk.
+    </p>
+
+
+    <div class="scanner-shell">
+
+        <div class="scanner-label">
+            <span>Website Investigation</span>
+            <span class="secure-label">SECURE ANALYSIS</span>
+        </div>
+
+        <div class="scanner-box">
+
+            <div class="url-icon">⌕</div>
+
+            <input
+                id="urlInput"
+                type="text"
+                placeholder="Enter a URL or domain — example.com"
+                autocomplete="off"
+                spellcheck="false"
+            >
+
+            <button id="scanButton">
+                <span>Analyse Website</span>
+                <b>→</b>
+            </button>
+
+        </div>
+
+        <div class="scanner-foot">
+            <span>◈ Live website inspection</span>
+            <span>◈ TLS intelligence</span>
+            <span>◈ Explainable risk assessment</span>
+        </div>
+
+    </div>
+
+    <p class="disclaimer">
+        Automated security assessment. Results indicate potential risk
+        and do not guarantee that a website is safe or malicious.
+    </p>
+
+</section>
+
+
+<!-- LOADING -->
+
+<section id="loading" class="loading hidden">
+
+    <div class="radar">
+        <div class="radar-line"></div>
+        <div class="radar-core"></div>
+    </div>
+
+    <h2>Investigating website</h2>
+
+    <p id="loadingTarget">
+        Analysing security signals...
+    </p>
+
+    <div class="loading-steps">
+        <span class="active">URL validation</span>
+        <span>Deep learning</span>
+        <span>Website inspection</span>
+        <span>Risk intelligence</span>
+    </div>
+
+</section>
+
+
+<!-- ERROR -->
+
+<section id="errorPanel" class="error-panel hidden">
+    <strong>Analysis could not be completed</strong>
+    <p id="errorText"></p>
+</section>
+
+
+<!-- REPORT -->
+
+<section id="report" class="report hidden">
+
+    <div class="report-header">
+
+        <div>
+            <div class="eyebrow report-eyebrow">
+                <span></span>
+                INVESTIGATION COMPLETE
+            </div>
+
+            <h2>Threat Intelligence Report</h2>
+
+            <p id="reportTarget"></p>
+        </div>
+
+        <div class="report-actions">
+
+            <button id="copyReport" class="secondary-button">
+                Copy summary
+            </button>
+
+            <button id="printReport" class="secondary-button">
+                Export / Print
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="report-meta">
+
+        <div>
+            <span>REPORT ID</span>
+            <strong id="reportId">—</strong>
+        </div>
+
+        <div>
+            <span>SCAN TIME</span>
+            <strong id="scanTime">—</strong>
+        </div>
+
+        <div>
+            <span>FINAL DESTINATION</span>
+            <strong id="finalUrl">—</strong>
+        </div>
+
+        <div>
+            <span>ENGINE</span>
+            <strong>Hybrid Threat Analysis</strong>
+        </div>
+
+    </div>
+
+
+    <!-- MAIN RISK -->
+
+    <div class="risk-layout">
+
+        <article class="panel risk-panel">
+
+            <div class="panel-heading">
+                Overall Threat Assessment
+            </div>
+
+            <div class="gauge-wrap">
+
+                <div id="riskGauge" class="risk-gauge">
+
+                    <div class="gauge-inner">
+
+                        <div id="riskScore" class="risk-number">
+                            0
+                        </div>
+
+                        <div class="out-of">
+                            / 100
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div id="riskBadge" class="risk-badge">
+                LOW RISK
+            </div>
+
+            <p class="risk-caption">
+                Combined assessment from all detection layers
+            </p>
+
+        </article>
+
+
+        <article class="panel assessment-panel">
+
+            <div class="panel-heading">
+                Security Assessment
+            </div>
+
+            <div id="assessmentIcon"
+                 class="assessment-icon">
+                ✓
+            </div>
+
+            <h3 id="assessmentTitle">
+                No strong phishing indicators detected.
+            </h3>
+
+            <p id="assessmentReason">
+                Analysis completed.
+            </p>
+
+            <div class="confidence-note">
+                <span>i</span>
+                This assessment represents detected risk indicators,
+                not a guarantee of website legitimacy.
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <!-- DETECTION ENGINES -->
+
+    <article class="panel engine-panel">
+
+        <div class="section-heading">
+
+            <div>
+                <span>ANALYSIS LAYERS</span>
+                <h3>Detection Engines</h3>
+            </div>
+
+            <div class="three-signals">
+                3 independent security signals
+            </div>
+
+        </div>
+
+
+        <div class="engine-grid">
+
+            <div class="engine-card">
+
+                <div class="engine-icon">AI</div>
+
+                <div class="engine-title">
+                    <span>Deep Learning</span>
+                    <small>Character-level CNN</small>
+                </div>
+
+                <div id="cnnScore"
+                     class="engine-value">
+                    0.0%
+                </div>
+
+                <div class="meter">
+                    <div id="cnnBar"></div>
+                </div>
+
+                <p>
+                    Detects phishing patterns learned from
+                    URL character sequences.
+                </p>
+
+            </div>
+
+
+            <div class="engine-card">
+
+                <div class="engine-icon">URL</div>
+
+                <div class="engine-title">
+                    <span>URL Intelligence</span>
+                    <small>Lexical analysis</small>
+                </div>
+
+                <div id="lexicalScore"
+                     class="engine-value">
+                    0.0%
+                </div>
+
+                <div class="meter">
+                    <div id="lexicalBar"></div>
+                </div>
+
+                <p>
+                    Inspects structural indicators such as
+                    suspicious tokens and URL complexity.
+                </p>
+
+            </div>
+
+
+            <div class="engine-card">
+
+                <div class="engine-icon">WEB</div>
+
+                <div class="engine-title">
+                    <span>Live Analysis</span>
+                    <small>Website inspection</small>
+                </div>
+
+                <div id="liveScore"
+                     class="engine-value">
+                    0.0%
+                </div>
+
+                <div class="meter">
+                    <div id="liveBar"></div>
+                </div>
+
+                <p>
+                    Examines redirects, page behaviour,
+                    forms and security signals.
+                </p>
+
+            </div>
+
+        </div>
+
+    </article>
+
+
+    <!-- INTELLIGENCE -->
+
+    <div class="intel-layout">
+
+        <article class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <span>NETWORK LAYER</span>
+                    <h3>Domain & TLS Intelligence</h3>
+                </div>
+            </div>
+
+            <div class="intel-table">
+
+                <div class="intel-row">
+                    <span>Registered domain</span>
+                    <strong id="domain">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>Hostname</span>
+                    <strong id="hostname">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>HTTP status</span>
+                    <strong id="httpStatus">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>HTTPS</span>
+                    <strong id="httpsStatus">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>TLS certificate</span>
+                    <strong id="tlsStatus">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>Certificate issuer</span>
+                    <strong id="tlsIssuer">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>Certificate expiry</span>
+                    <strong id="tlsExpiry">—</strong>
+                </div>
+
+                <div class="intel-row">
+                    <span>Redirects</span>
+                    <strong id="redirectCount">—</strong>
+                </div>
+
+            </div>
+
+        </article>
+
+
+        <article class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <span>PAGE LAYER</span>
+                    <h3>Website Security Signals</h3>
+                </div>
+            </div>
+
+            <div class="signal-grid">
+
+                <div class="signal">
+                    <span>Forms</span>
+                    <strong id="forms">0</strong>
+                </div>
+
+                <div class="signal">
+                    <span>Password fields</span>
+                    <strong id="passwordFields">0</strong>
+                </div>
+
+                <div class="signal">
+                    <span>Email fields</span>
+                    <strong id="emailFields">0</strong>
+                </div>
+
+                <div class="signal">
+                    <span>Iframes</span>
+                    <strong id="iframes">0</strong>
+                </div>
+
+                <div class="signal">
+                    <span>External forms</span>
+                    <strong id="externalForms">0</strong>
+                </div>
+
+                <div class="signal">
+                    <span>External links</span>
+                    <strong id="externalRatio">0%</strong>
+                </div>
+
+            </div>
+
+            <div class="availability">
+                <span id="availabilityDot"></span>
+
+                <div>
+                    <small>LIVE INSPECTION</small>
+                    <strong id="availability">
+                        Website analysis completed
+                    </strong>
+                </div>
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <!-- FINDINGS -->
+
+    <div class="intel-layout">
+
+        <article class="panel">
+
+            <div class="section-heading">
+                <div>
+                    <span>EXPLAINABILITY</span>
+                    <h3>Why this result?</h3>
+                </div>
+            </div>
+
+            <div id="findings"
+                 class="findings-list">
+            </div>
+
+        </article>
+
+
+        <article class="panel recommendation-panel">
+
+            <div class="section-heading">
+                <div>
+                    <span>ACTIONABLE INTELLIGENCE</span>
+                    <h3>Security Recommendation</h3>
+                </div>
+            </div>
+
+            <div class="recommendation-icon">!</div>
+
+            <p id="recommendation">
+                Verify the website before submitting
+                sensitive information.
+            </p>
+
+            <div class="safety-tip">
+                Always verify the exact domain before entering
+                passwords, financial information or personal data.
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <!-- TECHNICAL DETAILS -->
+
+    <details class="technical panel">
+
+        <summary>
+            View technical analysis details
+        </summary>
+
+        <div class="technical-grid">
+
+            <div>
+                <span>CNN analysis input</span>
+                <strong id="cnnInput">—</strong>
+            </div>
+
+            <div>
+                <span>Submitted URL</span>
+                <strong id="submittedUrl">—</strong>
+            </div>
+
+            <div>
+                <span>Suspicious phrases</span>
+                <strong id="suspiciousPhrases">None detected</strong>
+            </div>
+
+            <div>
+                <span>Live analysis error</span>
+                <strong id="liveError">None</strong>
+            </div>
+
+        </div>
+
+    </details>
+
+</section>
+
+
+<!-- PRODUCT CONTENT -->
+
+<section class="product-section" id="technology">
+
+    <div class="section-intro">
+        <span>TECHNOLOGY</span>
+
+        <h2>
+            One investigation.<br>
+            Multiple security perspectives.
+        </h2>
+
+        <p>
+            PhishingGuard does not rely on a single indicator.
+            It combines machine intelligence with URL and
+            live website security analysis.
+        </p>
+    </div>
+
+
+    <div class="feature-grid">
+
+        <article class="feature">
+            <div class="feature-number">01</div>
+            <h3>Deep Learning Detection</h3>
+            <p>
+                A character-level convolutional neural network
+                evaluates patterns within the analysed URL.
+            </p>
+        </article>
+
+        <article class="feature">
+            <div class="feature-number">02</div>
+            <h3>URL Threat Intelligence</h3>
+            <p>
+                Lexical analysis examines structural characteristics
+                commonly associated with suspicious URLs.
+            </p>
+        </article>
+
+        <article class="feature">
+            <div class="feature-number">03</div>
+            <h3>Live Website Inspection</h3>
+            <p>
+                The destination is safely inspected for redirects,
+                TLS security, forms and page-level indicators.
+            </p>
+        </article>
+
+    </div>
+
+</section>
+
+
+<section class="workflow-section" id="how-it-works">
+
+    <div class="section-intro centered">
+        <span>ANALYSIS PIPELINE</span>
+        <h2>How PhishingGuard works</h2>
+    </div>
+
+    <div class="pipeline">
+
+        <div class="pipeline-step">
+            <b>01</b>
+            <span>URL Input</span>
+        </div>
+
+        <i>→</i>
+
+        <div class="pipeline-step">
+            <b>02</b>
+            <span>Secure Validation</span>
+        </div>
+
+        <i>→</i>
+
+        <div class="pipeline-step">
+            <b>03</b>
+            <span>Threat Analysis</span>
+        </div>
+
+        <i>→</i>
+
+        <div class="pipeline-step">
+            <b>04</b>
+            <span>Risk Fusion</span>
+        </div>
+
+        <i>→</i>
+
+        <div class="pipeline-step">
+            <b>05</b>
+            <span>Threat Report</span>
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="security-section" id="security">
+
+    <div>
+        <span>SECURITY BY DESIGN</span>
+
+        <h2>
+            Built to analyse URLs safely.
+        </h2>
+
+        <p>
+            PhishingGuard validates destinations before live
+            inspection and applies controls designed to prevent
+            access to private or local network resources.
+        </p>
+    </div>
+
+    <div class="security-points">
+
+        <span>✓ Private-network blocking</span>
+        <span>✓ Redirect validation</span>
+        <span>✓ Request timeouts</span>
+        <span>✓ Response-size limits</span>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<footer>
+
+    <div class="footer-brand">
+        <strong>Phishing<span>Guard</span></strong>
+        <p>Website Threat Intelligence</p>
+    </div>
+
+    <div class="footer-note">
+        PhishingGuard provides automated risk intelligence.
+        Results should support—not replace—human security judgement.
+    </div>
+
+    <div class="footer-tech">
+        CNN • URL Intelligence • Live Analysis
+    </div>
+
+</footer>
+
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>
