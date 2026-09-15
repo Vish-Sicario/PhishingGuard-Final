@@ -1,4 +1,3 @@
-
 import ipaddress
 import math
 import re
@@ -764,14 +763,63 @@ def live_website_analysis(url):
             result["https"]
             and final_parsed.hostname
         ):
-            result["tls"] = (
-                get_tls_information(
-                    final_parsed.hostname
-                )
+            result["tls"] = get_tls_information(
+                final_parsed.hostname
             )
 
+        if not result["https"]:
+
+            result["risk_score"] += 15
+
+            result["reasons"].append(
+                "Website is not using HTTPS."
+            )
+
+        if (
+            result["https"]
+            and result["tls"]["checked"]
+            and not result["tls"]["valid"]
+        ):
+
+            result["risk_score"] += 15
+
+            result["reasons"].append(
+                "TLS certificate validation failed."
+            )
+
+        if fetched["redirect_count"] >= 3:
+
+            result["risk_score"] += 8
+
+            result["reasons"].append(
+                "Multiple redirects detected."
+            )
+
+        content_type = fetched[
+            "content_type"
+        ]
+
+        if (
+            "html" not in content_type
+            and fetched["content"]
+        ):
+
+            result["risk_score"] = min(
+                100,
+                result["risk_score"]
+            )
+
+            return result
+
+        html = fetched[
+            "content"
+        ].decode(
+            "utf-8",
+            errors="ignore"
+        )
+
         soup = BeautifulSoup(
-            fetched["content"],
+            html,
             "html.parser"
         )
 
@@ -779,62 +827,55 @@ def live_website_analysis(url):
             "form"
         )
 
-        result["forms"] = len(forms)
+        result["forms"] = len(
+            forms
+        )
+
+        password_fields = soup.find_all(
+            "input",
+            attrs={"type": "password"}
+        )
 
         result["password_fields"] = len(
-            soup.find_all(
-                "input",
-                {
-                    "type":
-                    re.compile(
-                        "^password$",
-                        re.I
-                    )
-                }
-            )
+            password_fields
+        )
+
+        email_fields = soup.find_all(
+            "input",
+            attrs={"type": "email"}
         )
 
         result["email_fields"] = len(
-            soup.find_all(
-                "input",
-                {
-                    "type":
-                    re.compile(
-                        "^email$",
-                        re.I
-                    )
-                }
-            )
+            email_fields
+        )
+
+        hidden_fields = soup.find_all(
+            "input",
+            attrs={"type": "hidden"}
         )
 
         result["hidden_fields"] = len(
-            soup.find_all(
-                "input",
-                {
-                    "type":
-                    re.compile(
-                        "^hidden$",
-                        re.I
-                    )
-                }
-            )
+            hidden_fields
+        )
+
+        iframes = soup.find_all(
+            "iframe"
         )
 
         result["iframes"] = len(
-            soup.find_all("iframe")
+            iframes
         )
 
         current_domain = domain_name(
             final_parsed.hostname
         )
 
-        # ------------------------------
-        # FORMS
-        # ------------------------------
-
         for form in forms:
 
-            action = form.get("action")
+            action = (
+                form.get("action")
+                or ""
+            ).strip()
 
             if not action:
                 continue
@@ -855,20 +896,91 @@ def live_website_analysis(url):
             if (
                 action_domain
                 and current_domain
-                and action_domain != current_domain
+                and action_domain
+                != current_domain
             ):
+
                 result[
                     "external_form_actions"
                 ] += 1
 
-            if action_parsed.scheme == "http":
+            if (
+                action_parsed.scheme == "http"
+                and result["https"]
+            ):
+
                 result[
                     "insecure_form_actions"
                 ] += 1
 
-        # ------------------------------
-        # LINKS
-        # ------------------------------
+        if result["external_form_actions"]:
+
+            result["risk_score"] += 25
+
+            result["reasons"].append(
+                "Form submits data to an external domain."
+            )
+
+        if result["insecure_form_actions"]:
+
+            result["risk_score"] += 25
+
+            result["reasons"].append(
+                "Secure page submits a form over HTTP."
+            )
+
+        if result["password_fields"]:
+
+            result["risk_score"] += 8
+
+            result["reasons"].append(
+                "Password input field detected."
+            )
+
+        if (
+            result["password_fields"]
+            and not result["https"]
+        ):
+
+            result["risk_score"] += 30
+
+            result["reasons"].append(
+                "Password field is present on a non-HTTPS page."
+            )
+
+        if result["iframes"] >= 3:
+
+            result["risk_score"] += 8
+
+            result["reasons"].append(
+                "Multiple embedded frames detected."
+            )
+
+        page_text = soup.get_text(
+            " ",
+            strip=True
+        ).lower()
+
+        suspicious_phrases = [
+            phrase
+            for phrase in SUSPICIOUS_PAGE_TERMS
+            if phrase in page_text
+        ]
+
+        result["suspicious_phrases"] = (
+            suspicious_phrases
+        )
+
+        if suspicious_phrases:
+
+            result["risk_score"] += min(
+                20,
+                len(suspicious_phrases) * 5
+            )
+
+            result["reasons"].append(
+                "Suspicious account or security language detected on page."
+            )
 
         links = soup.find_all(
             "a",
@@ -879,15 +991,21 @@ def live_website_analysis(url):
             links
         )
 
+        external_links = 0
+
         for link in links:
 
-            link_url = urljoin(
+            href = link.get(
+                "href"
+            )
+
+            absolute = urljoin(
                 fetched["final_url"],
-                link.get("href")
+                href
             )
 
             link_parsed = urlparse(
-                link_url
+                absolute
             )
 
             link_domain = domain_name(
@@ -897,143 +1015,44 @@ def live_website_analysis(url):
             if (
                 link_domain
                 and current_domain
-                and link_domain != current_domain
+                and link_domain
+                != current_domain
             ):
-                result[
-                    "external_links"
-                ] += 1
+                external_links += 1
+
+        result["external_links"] = (
+            external_links
+        )
 
         if result["total_links"]:
+
+            ratio = (
+                external_links
+                / result["total_links"]
+            )
 
             result[
                 "external_link_ratio"
             ] = round(
-                result["external_links"]
-                / result["total_links"],
+                ratio,
                 3
             )
 
-        # ------------------------------
-        # PAGE LANGUAGE
-        # ------------------------------
+            if (
+                result["total_links"] >= 10
+                and ratio >= 0.75
+            ):
 
-        page_text = soup.get_text(
-            " ",
-            strip=True
-        ).lower()
+                result["risk_score"] += 8
 
-        for phrase in (
-            SUSPICIOUS_PAGE_TERMS
-        ):
-
-            if phrase in page_text:
-
-                result[
-                    "suspicious_phrases"
-                ].append(phrase)
-
-        # ------------------------------
-        # LIVE RISK
-        # ------------------------------
-
-        score = 0
-        reasons = []
-
-        if not result["https"]:
-
-            score += 20
-
-            reasons.append(
-                "Website does not use HTTPS."
-            )
-
-        if (
-            result["https"]
-            and result["tls"]["checked"]
-            and not result["tls"]["valid"]
-        ):
-
-            score += 20
-
-            reasons.append(
-                "TLS certificate could not "
-                "be validated."
-            )
-
-        if result["redirect_count"] >= 3:
-
-            score += 10
-
-            reasons.append(
-                "Multiple redirects detected."
-            )
-
-        if result["password_fields"]:
-
-            score += 8
-
-            reasons.append(
-                "Password input field detected."
-            )
-
-        if result[
-            "external_form_actions"
-        ]:
-
-            score += 25
-
-            reasons.append(
-                "Form submits information "
-                "to an external domain."
-            )
-
-        if result[
-            "insecure_form_actions"
-        ]:
-
-            score += 25
-
-            reasons.append(
-                "Form may submit information "
-                "over insecure HTTP."
-            )
-
-        if result["suspicious_phrases"]:
-
-            score += min(
-                20,
-                len(
-                    result[
-                        "suspicious_phrases"
-                    ]
-                ) * 5
-            )
-
-            reasons.append(
-                "Suspicious account/security "
-                "language detected."
-            )
-
-        if (
-            result["total_links"] >= 10
-            and result[
-                "external_link_ratio"
-            ] >= 0.80
-        ):
-
-            score += 10
-
-            reasons.append(
-                "Very high proportion of "
-                "external links detected."
-            )
+                result["reasons"].append(
+                    "Very high proportion of external links detected."
+                )
 
         result["risk_score"] = min(
             100,
-            score
+            result["risk_score"]
         )
-
-        result["reasons"] = reasons
 
     except Exception as exc:
 
@@ -1043,7 +1062,7 @@ def live_website_analysis(url):
 
 
 # ============================================================
-# FINAL DECISION ENGINE
+# DECISION ENGINE
 # ============================================================
 
 def get_risk_level(score):
@@ -1063,30 +1082,25 @@ def get_risk_level(score):
 def get_recommendation(level):
 
     recommendations = {
+        "LOW": (
+            "No strong phishing indicators were detected. "
+            "Remain cautious and verify unexpected requests."
+        ),
 
-        "LOW":
-            "No strong phishing indicators "
-            "were detected. Still verify the "
-            "domain before entering sensitive "
-            "information.",
+        "MEDIUM": (
+            "Some suspicious indicators were detected. "
+            "Verify the website before entering personal information."
+        ),
 
-        "MEDIUM":
-            "Some suspicious indicators were "
-            "detected. Check the domain carefully "
-            "and avoid sensitive information "
-            "unless you trust the website.",
+        "HIGH": (
+            "Multiple phishing indicators were detected. "
+            "Avoid entering credentials or payment information."
+        ),
 
-        "HIGH":
-            "Multiple phishing or security-risk "
-            "indicators were detected. Avoid "
-            "entering credentials, financial "
-            "information or personal data.",
-
-        "CRITICAL":
-            "Strong phishing indicators were "
-            "detected. Do not enter passwords, "
-            "banking details or personal "
-            "information."
+        "CRITICAL": (
+            "Strong phishing indicators were detected. "
+            "Do not interact with the website or submit sensitive data."
+        )
     }
 
     return recommendations[level]
@@ -1140,6 +1154,29 @@ def scan_url(raw_url):
         max(0, overall)
     )
 
+    # Cross-layer corroboration guard.
+    # A very high CNN score is not allowed to create a HIGH/CRITICAL
+    # verdict by itself when both independent analysis layers are clean
+    # and the live site presents a valid HTTPS/TLS connection. This is
+    # domain-agnostic: no trusted-site allowlist or hard-coded domain is used.
+    cnn_uncorroborated = (
+        cnn_score >= 80
+        and lexical["score"] < 10
+        and live_score < 10
+        and live["available"]
+        and live["https"]
+        and live["tls"]["valid"]
+        and not live["external_form_actions"]
+        and not live["insecure_form_actions"]
+        and not (
+            live["password_fields"]
+            and not live["https"]
+        )
+    )
+
+    if cnn_uncorroborated:
+        overall = min(overall, 24.99)
+
     # Safety overrides
 
     if live["external_form_actions"]:
@@ -1188,7 +1225,16 @@ def scan_url(raw_url):
         live["reasons"]
     )
 
-    if cnn_score >= 80:
+    if cnn_uncorroborated:
+
+        reasons.insert(
+            0,
+            "The deep-learning model flagged a URL pattern, "
+            "but independent URL and live-site checks did not "
+            "corroborate a strong phishing risk."
+        )
+
+    elif cnn_score >= 80:
 
         reasons.insert(
             0,
@@ -1284,11 +1330,23 @@ def scan_url(raw_url):
         "email_fields":
             live["email_fields"],
 
+        "hidden_fields":
+            live["hidden_fields"],
+
         "iframes":
             live["iframes"],
 
         "external_form_actions":
             live["external_form_actions"],
+
+        "insecure_form_actions":
+            live["insecure_form_actions"],
+
+        "total_links":
+            live["total_links"],
+
+        "external_links":
+            live["external_links"],
 
         "external_link_ratio":
             live["external_link_ratio"],
@@ -1296,14 +1354,19 @@ def scan_url(raw_url):
         "suspicious_phrases":
             live["suspicious_phrases"],
 
-        "live_analysis_error":
-            live["error"],
-
         "reasons":
-            reasons,
+            reasons[:8],
 
         "recommendation":
             get_recommendation(
                 risk_level
-            )
+            ),
+
+        "engine":
+            "CNN + URL Intelligence + Live Website Analysis",
+
+        "disclaimer": (
+            "Automated security assessment based on detected risk indicators. "
+            "Results do not guarantee that a website is safe or malicious."
+        )
     }
